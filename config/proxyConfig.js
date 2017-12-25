@@ -1,10 +1,10 @@
 module.exports = {
 	proxyList: {
-		'/port':{
-	        target: 'http://advcount.13737.com/home/port',
+		'/api':{
+	        target: 'http://chat.emlice.top',
 	        changeOrigin:true,
 	        pathRewrite: {
-	        	'^/port': ''
+	        	'^/api': '/api'
 	        }
 	    }
 	}

@@ -1,8 +1,8 @@
 import babelpolyfill from 'babel-polyfill'
 import Vue from 'vue'
 import App from './App'
-// import ElementUI from 'element-ui'
-// import 'element-ui/lib/theme-default/index.css'
+import ElementUI from 'element-ui'
+import 'element-ui/lib/theme-chalk/index.css'
 import VueRouter from 'vue-router'
 // import store from './vuex/store'
 // import Vuex from 'vuex'
@@ -19,15 +19,14 @@ Vue.prototype.$NProgress = NProgress;
 
 import routes from './routes'
 
-// import 'font-awesome/css/font-awesome.min.css'
 //jQuery
 // import $ from 'jquery';
 
-import { setLocalStorage, getLocalStorage } from './api/api';
-// import api_port from './api/api_address';
+// import { setLocalStorage, getLocalStorage } from './api/api';
+import api_port from './api/api_address';
 
-// Vue.use(api_port)
-// Vue.use(ElementUI)
+Vue.use(api_port)
+Vue.use(ElementUI)
 Vue.use(VueRouter)
 // Vue.use(Vuex)
 

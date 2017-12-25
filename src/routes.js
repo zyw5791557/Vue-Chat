@@ -1,7 +1,6 @@
-// const Login = resolve => require(['./views/Login.vue'],resolve);
+const Login = resolve => require(['./views/Login.vue'],resolve);
+const Register = resolve => require(['./views/Register.vue'],resolve);
 const Home = resolve => require(['./views/Home.vue'],resolve);
-// const Music = resolve => require(['./views/music/Music.vue'],resolve);
-// const Player = resolve => require(['./views/music/Player.vue'],resolve);
 const NotFound = resolve => require(['./views/404.vue'],resolve);
 
 let routes = [
@@ -13,6 +12,16 @@ let routes = [
     {
         path: '/',
         redirect: { path: '/home' }
+    },
+    {
+        path: '/login',
+        component: Login,
+        name: 'Login'
+    },
+    {
+        path: '/register',
+        component: Register,
+        name: 'Register'
     },
     {
         path: '/404',

@@ -18,8 +18,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import url('./assets/style/common/reset.css');
-@import url('./assets/style/common/normalize.css');
+@import url('./assets/style/common/style.css');
 .fade-enter-active,
 .fade-leave-active {
 	transition: all .3s ease;

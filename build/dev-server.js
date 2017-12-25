@@ -18,7 +18,7 @@ var port = process.env.PORT || config.dev.port
 var autoOpenBrowser = !!config.dev.autoOpenBrowser
 // Define HTTP proxies to your custom API backend
 // https://github.com/chimurai/http-proxy-middleware
-// var proxyTable = config.dev.proxyTable
+var proxyTable = config.dev.proxyTable
 
 var app = express()
 var compiler = webpack(webpackConfig)
@@ -40,13 +40,13 @@ compiler.plugin('compilation', function (compilation) {
 })
 
 // proxy api requests
-// Object.keys(proxyTable).forEach(function (context) {
-//   var options = proxyTable[context]
-//   if (typeof options === 'string') {
-//     options = { target: options }
-//   }
-//   app.use(proxyMiddleware(options.filter || context, options))
-// })
+Object.keys(proxyTable).forEach(function (context) {
+  var options = proxyTable[context]
+  if (typeof options === 'string') {
+    options = { target: options }
+  }
+  app.use(proxyMiddleware(options.filter || context, options))
+})
 
 
 // mock
@@ -62,8 +62,8 @@ app.use(devMiddleware)
 // compilation error display
 app.use(hotMiddleware)
 
-// 导入接口 EmliceMusic
-// const routes = require('../server/app.js');
+// 导入接口 
+// const routes = require('../server/index.js');
 // app.use(routes);
 
 // serve pure static assets
