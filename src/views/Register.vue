@@ -2,6 +2,7 @@
 export default {
     data () {
         return {
+            tip: '滴滴,新司机打卡~',
             form: {
                 username: '',
                 password: ''
@@ -13,13 +14,20 @@ export default {
             this.$router.push({ name: 'Login' })
         },
         register () {
-
+            if(!this.form.username) {
+                this.$message.error('请输入账号!');
+                return;
+            }
+            if(!this.form.password) {
+                this.$message.error('请输入密码!');
+                return;
+            }
             this.getApi('register','post',{
                 name: this.form.username,
                 pwd: this.form.password,
                 avatar: "http://static.emlice.top/images/users/default.png",
                 sex: 'male',
-                birthday: '2017-10-25',
+                birthday: '2017-12-25',
                 place: '',
                 website: '',
                 github: '',
@@ -32,7 +40,7 @@ export default {
                     	name: name,
                     	avatar: "http://static.emlice.top/images/users/default.png",
                     	sex: 'male',
-                    	birthday: '2017-10-25',
+                    	birthday: '2017-12-25',
                     	place: '',
                     	website: '',
                     	github: '',
@@ -42,7 +50,7 @@ export default {
                         message: '注册成功, 即将自动跳转。',
                         type: 'success'
                     });
-                    setTimeout(function () {
+                    setTimeout(() => {
                         localStorage.setItem('UserInfo', JSON.stringify(userData));
                         localStorage.setItem('Duration', 1);
                         this.$router.push({ name: 'Chatroom' });
@@ -65,10 +73,10 @@ export default {
         <div class="login">
             <div>
                 <div>
-                    <img class="avatar-image" src="../assets/images/user.jpg" style="width: 100px; height: 100px; min-width: 100px; min-height: 100px;">
+                    <img class="avatar-image" src="/static/images/user.jpg" style="width: 100px; height: 100px; min-width: 100px; min-height: 100px;">
                 </div>
                 <div>
-                    <span style="position: relative; top: -4px;">滴滴,新司机打卡~</span>
+                    <span style="position: relative; top: -4px;">{{ tip }}</span>
                     <div class="input normal">
                         <div>
                             <i class="icon"> </i>

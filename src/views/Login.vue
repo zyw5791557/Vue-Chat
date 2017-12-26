@@ -2,6 +2,7 @@
 export default {
     data () {
         return {
+            tip: '滴滴,学生卡~',
             form: {
                 username: '',
                 password: ''
@@ -41,10 +42,10 @@ export default {
         <div class="login">
             <div>
                 <div>
-                    <img class="avatar-image" src="../assets/images/user.jpg" style="width: 100px; height: 100px; min-width: 100px; min-height: 100px;">
+                    <img class="avatar-image" src="/static/images/user.jpg" style="width: 100px; height: 100px; min-width: 100px; min-height: 100px;">
                 </div>
                 <div>
-                    <span style="position: relative; top: -4px;">滴滴,学生卡~</span>
+                    <span style="position: relative; top: -4px;">{{ tip }}</span>
                     <div class="input normal">
                         <div>
                             <i class="icon"> </i>
