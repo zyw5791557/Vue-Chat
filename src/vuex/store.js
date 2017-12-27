@@ -6,7 +6,10 @@ Vue.use(Vuex);
 // 创建 store 实例
 export default new Vuex.Store({
     state: {
-        count: 0
+        userInfo: {
+            username: '我是你毛爷爷',
+            avatar: ''
+        }
     },
     mutations: {
         intrement(state, payload) {

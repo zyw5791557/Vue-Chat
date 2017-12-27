@@ -1,4 +1,5 @@
 <script>
+import Date from '../common/js/util.js';
 import UserSettingModule from '@/components/UserSettingModule';
 import SystemSettingModule from '@/components/SystemSettingModule';
 import PanelRoomNoticeModule from '@/components/PanelRoomNoticeModule';
@@ -45,6 +46,7 @@ export default {
     },
 	data() {
 		return {
+            username: 'Emlice',
             currentChatData: [],
             chatGroup: ['all'],
             userList: [
@@ -124,15 +126,17 @@ export default {
         },
         takeMessage(o) {
             socket.emit('take messages', { 
-                from: '我是你毛爷爷',
+                from: 'Emlice',
                 take: 'all'
              });
         }
 	},
 	mounted() {
+        socket.emit('user join', 'Emlice')
         // 接受历史记录
-        socket.on('user join', function (data) {
+        socket.on('take messages',  data => {
             console.log('人：', data);
+            this.currentChatData = data;
         });
 	}
 }
@@ -197,6 +201,20 @@ export default {
                             </div>
                         </div>
                         <div class="message-list">
+                            <div v-for="(item,index) in currentChatData" :key="index" class="message-list-item">
+                                <div :class="{ 'message-self': item.from === username }" class="native-message">
+                                    <img class="avatar-image user-icon" :src="item.avatar" alt="" :data-username="item.from">
+                                    <div>
+                                        <div>
+                                            <span class="message-username">{{ item.from }}</span>
+                                            <span>{{ (new Date(item.date).format('hh:mm:ss')) }}</span>
+                                        </div>
+                                        <div class="text">
+                                            {{ item.message }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="toolbar">
                             <div @click="expressionFlag = true">
