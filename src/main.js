@@ -33,7 +33,11 @@ Vue.use(VueRouter)
 const router = new VueRouter({
 	mode: 'history',       // 需要后台配置支持
 	routes
-})
+});
+
+// 线上资源服务器地址
+Vue.prototype.$STATIC_URL = 'http://static.emlice.top';
+
 
 // 全局 axiosBaseURL
 Vue.prototype.$BASE_URL = process.env.API_ROOT;
