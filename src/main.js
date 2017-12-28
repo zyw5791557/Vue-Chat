@@ -6,10 +6,6 @@ import 'element-ui/lib/theme-chalk/index.css'
 import VueRouter from 'vue-router'
 import store from './vuex/store'
 import Vuex from 'vuex'
-// axios
-import axios from 'axios'
-
-Vue.prototype.$axios = axios;     // Vue2.0+官方推荐
 
 // 进度条
 import NProgress from 'nprogress';
@@ -19,10 +15,10 @@ Vue.prototype.$NProgress = NProgress;
 
 import routes from './routes'
 
-// import { setLocalStorage, getLocalStorage } from './api/api';
-import api_port from './api/api_address';
+// import { setLocalStorage, getLocalStorage } from './common/js/util.js';
+import api from './api/index';
 
-Vue.use(api_port)
+Vue.use(api)
 Vue.use(ElementUI)
 Vue.use(VueRouter)
 Vue.use(Vuex)
@@ -40,7 +36,16 @@ Vue.prototype.$STATIC_URL = 'http://static.emlice.top';
 Vue.prototype.$BASE_URL = process.env.API_ROOT;
 
 router.beforeEach((to, from, next) => {
-	next();
+	if(to.path === '/chatroom') {
+		const user = localStorage.getItem('UserInfo');
+		if(!user) {
+			next({ path: '/login' });
+		}else {
+			next();
+		}
+	}else {
+		next();
+	}
 })
 
 

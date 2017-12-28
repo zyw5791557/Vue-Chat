@@ -1991,7 +1991,6 @@ header {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    display: none;
 }
 .lyric_content span {
     float: right;

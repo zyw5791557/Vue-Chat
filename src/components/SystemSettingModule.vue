@@ -39,7 +39,7 @@ export default {
                 <i class="icon"></i>
                 <span>作者</span>
             </a>
-            <a class="button" id="logoutBtn">
+            <a @click="$emit('logout')" class="button" id="logoutBtn">
                 <i class="icon"></i>
                 <span>登出</span>
             </a>

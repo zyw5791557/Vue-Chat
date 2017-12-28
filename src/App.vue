@@ -1,3 +1,16 @@
+<script>
+export default {
+	name: 'app',
+	components: {
+		
+	},
+	mounted () {
+		
+	}
+}
+
+</script>
+
 <template>
 	<div id="app">
 		<transition name="fade"
@@ -7,18 +20,9 @@
 	</div>
 </template>
 
-<script>
-export default {
-	name: 'app',
-	components: {
-		
-	}
-}
-
-</script>
-
 <style lang="scss">
 @import url('./assets/style/common/style.css');
+@import url('./assets/style/common/solarized-light.css');
 .fade-enter-active,
 .fade-leave-active {
 	transition: all .3s ease;

@@ -11,11 +11,16 @@ export default {
     },
     methods: {
         login() {
-            this.getApi('login','post',{
-                name: this.form.username,
-                pwd: this.form.password
+            this.getApi('login',{
+                method: 'post',
+                data: {
+                    name: this.form.username,
+                    pwd: this.form.password
+                }
             }).then(res => {
+                console.log(res);
                 const c = res.data.Code;
+                const h = res.data.duration;
                 if (c === 0) {
                     // 登录成功
                     localStorage.setItem('UserInfo', JSON.stringify(res.data.Data));

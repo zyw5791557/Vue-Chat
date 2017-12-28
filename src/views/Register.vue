@@ -22,16 +22,19 @@ export default {
                 this.$message.error('请输入密码!');
                 return;
             }
-            this.getApi('register','post',{
-                name: this.form.username,
-                pwd: this.form.password,
-                avatar: "http://static.emlice.top/images/users/default.png",
-                sex: 'male',
-                birthday: '2017-12-25',
-                place: '',
-                website: '',
-                github: '',
-                qq: ''
+            this.getApi('register',{
+                method: 'post',
+                data: {
+                    name: this.form.username,
+                    pwd: this.form.password,
+                    avatar: "http://static.emlice.top/images/users/default.png",
+                    sex: 'male',
+                    birthday: '2017-12-25',
+                    place: '',
+                    website: '',
+                    github: '',
+                    qq: ''
+                }
             }).then(res => {
                 const c = res.data.Code;
                 if (c === 0) {
