@@ -12,7 +12,6 @@
   "dependencies": {
     "axios": "^0.17.1",
     "element-ui": "2.0.9",
-    "jquery": "^3.2.1",
     "nprogress": "0.2.0",
     "vue": "^2.5.13",
     "vue-router": "^3.0.1",

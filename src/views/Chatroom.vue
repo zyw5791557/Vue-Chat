@@ -1,5 +1,5 @@
 <script>
-import Date from '../common/js/util.js';
+import Date from '@/common/js/util.js';
 import UserSettingModule from '@/components/UserSettingModule';
 import SystemSettingModule from '@/components/SystemSettingModule';
 import PanelRoomNoticeModule from '@/components/PanelRoomNoticeModule';
@@ -37,7 +37,7 @@ export default {
      * clearPanel               清除所有面板状态
      * loadChatPanel            加载聊天面板
      * unfinished               未完成提示
-     * msgProcess               消息预处理
+     * normalSmartProcess       消息智能处理
      * noticeProcess            消息提示工厂
      * userTip                  用户列表消息提示处理
      * sendMessage              发送消息
@@ -146,67 +146,54 @@ export default {
         unfinished () {
             this.$notify.info({ title: '消息', message: '暂未开放' });
         },
-        msgProcess (param, type) {
-            const baidu = this.$store.state.expression.baidu.data;
-            const baidu_space = this.$store.state.expression.baidu.space;
-            const baidu_address = this.$STATIC_URL + this.$store.state.expression.baidu.address;
-            var t = param.charAt(0);
-            if (type === 'expression' || t === '#') {
-                if(type === 'expression') {
-                    var query = param;
-                }else {
-                    var query = param.substr(1);
-                }
-                var baidu_idx;
-                baidu.some((item, index) => {
-                    if (item === query) {
-                        baidu_idx = index;
-                    }
-                });
-                if (baidu_idx === undefined) {
-                    return `
-                        <div class="text">
-                            ${param}
-                        </div>
-                    `;
-                }
-                return `
-                    <div class="text">
-                        <img class="expression-default-message" src="data:image/png;base64,R0lGODlhFAAUAIAAAP///wAAACH5BAEAAAAALAAAAAAUABQAAAIRhI+py+0Po5y02ouz3rz7rxUAOw==" style="background-position: left -${baidu_idx * baidu_space}px; background-image: url(${baidu_address})" onerror="this.style.display='none'">
-                    </div>
-                `;
-            } else if (type === 'printscreen') {
+        normalSmartProcess (param, type) { 
+            var FTA = param.match(/^(https?|ftp|file):\/\//g);
+            var f = param.match(/.*(\.png|\.jpg|\.jpeg|\.gif)$/);
+            // 远程图片链接解析, 接口反防盗链
+            if(FTA !== null && f !== null) {
                 return `
                     <div class="image">
-                        <img src="${param}" onerror="this.src='/images/imgError.jpg'" style="max-height: 200px;">
+                        <img data-original="/api/imgload?url=${param}" src="/api/imgload?url=${param}" onerror="this.src='/static/images/imgError.jpg'" style="max-height: 200px;">
+                    </div>
+                `;
+            }
+            // 渲染链接
+            if (FTA !== null) {
+                return `
+                    <div class="text">
+                        <a class="imageURL" href="${param}" rel="noopener noreferrer" target="_blank">${param}</a>
                     </div>
                 `;
             } else {
-                var FTA = param.match(/^(https?|ftp|file):\/\//g);
-                var f = param.match(/.*(\.png|\.jpg|\.jpeg|\.gif)$/);
-                // 远程图片链接解析, 接口反防盗链
-                if(FTA !== null && f !== null) {
-                    return `
-                        <div class="image">
-                            <img src="/api/imgload?url=${param}" onerror="this.src='/images/imgError.jpg'" style="max-height: 200px;">
-                        </div>
-                    `;
-                }
-                // 渲染链接
-                if (FTA !== null) {
-                    return `
-                        <div class="text">
-                            <a class="imageURL" href="${param}" rel="noopener noreferrer" target="_blank">${param}</a>
-                        </div>
-                    `;
-                } else {
-                    return `
-                        <div class="text">
-                            ${param}
-                        </div>
-                    `;
-                }
+                return `
+                    <div class="text">
+                        ${param}
+                    </div>
+                `;
             }
+        },
+        expressionProcess (item) {
+            const baidu = this.$store.state.expression.baidu.data;
+            const baidu_space = this.$store.state.expression.baidu.space;
+            const baidu_address = this.$STATIC_URL + this.$store.state.expression.baidu.address;
+            let query;
+            if(item.type === 'expression') {
+                query = item.message;
+            }else {
+                query = item.message.substr(1);
+            }
+            let baidu_idx;
+            baidu.some((item, index) => {
+                if (item === query) {
+                    baidu_idx = index;
+                }
+            });
+            if(baidu_idx === undefined) return item.message;
+            return  `<img 
+                        class="expression-default-message" 
+                        src="data:image/png;base64,R0lGODlhFAAUAIAAAP///wAAACH5BAEAAAAALAAAAAAUABQAAAIRhI+py+0Po5y02ouz3rz7rxUAOw==" 
+                        style="background-position: left -${baidu_idx * baidu_space}px; background-image: url(${baidu_address})" 
+                        onerror="this.style.display='none'">`
         },
         noticeProcess (param,type) {
             const baidu = this.$store.state.expression.baidu.data;
@@ -282,6 +269,12 @@ export default {
                 if (!this.$refs.messageList) return;
                 this.chatPanelAdjust();
             });
+        },
+        imagePreview () {
+            // 图片放大
+            if(this.$refs.preview) new Viewer(this.$refs.messageList, {
+                url: 'data-original'
+            });
         }
 	},
 	mounted() {
@@ -305,6 +298,7 @@ export default {
         this.codeBlockAdjust();
         this.chatPanelAdjust();
         this.imageAdjust();
+        this.imagePreview();
         console.log('更新了')
     }
 }
@@ -377,10 +371,18 @@ export default {
                                             <span class="message-username">{{ item.from }}</span>
                                             <span>{{ (new Date(item.date).format('hh:mm:ss')) }}</span>
                                         </div>
-                                        <div v-if="item.type === 'code'" ref="codeBlock" class="code"><pre><code>{{ item.message }}</code></pre></div>
-                                        <div v-else v-html="msgProcess(item.message, item.type)">
-
-                                        </div>
+                                        <template>
+                                            <div v-if="item.type === 'code'" ref="codeBlock" class="code"><pre><code>{{ item.message }}</code></pre></div>
+                                            <div v-else-if="(item.type === 'express') || (item.message.charAt(0) === '#')" class="text">
+                                                <div v-html="expressionProcess(item)"></div>
+                                            </div>
+                                            <div v-else-if="item.type === 'printscreen'" class="image" ref="preview">
+                                                <img :data-original="item.message" :src="item.message" onerror="this.src='/images/imgError.jpg'" style="max-height: 200px;">
+                                            </div>
+                                            <div v-else v-html="normalSmartProcess(item.message, item.type)">
+                                                
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                             </div>

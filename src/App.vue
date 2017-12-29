@@ -44,8 +44,4 @@ h1,h2,h3,h4,h5,h6 {
     margin: 0;
     padding: 0;
 }
-a {
-    color: rgba(255, 255, 255, 1);
-    text-decoration: none;
-}
 </style>
