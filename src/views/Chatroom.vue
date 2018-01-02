@@ -5,6 +5,7 @@ import SystemSettingModule from '@/components/SystemSettingModule';
 import PanelRoomNoticeModule from '@/components/PanelRoomNoticeModule';
 import PanelRoomInfoModule from '@/components/PanelRoomInfoModule';
 import PanelExpressionModule from '@/components/PanelExpressionModule';
+import PanelUserInfoModule from '@/components/PanelUserInfoModule';
 export default {
     /**@components  - 组件注册
      * UserSettingModule        用户设置
@@ -12,6 +13,7 @@ export default {
      * PanelRoomNoticeModule    群聊公告面板
      * PanelRoomInfoModule      群聊信息面板
      * PanelExpressionModule    表情模块
+     * PanelUserInfoModule      用户信息面板
      * 
      * @data        - 状态
      * userInfo                 用户信息
@@ -19,6 +21,7 @@ export default {
      * currentChatData          当前聊天窗口的消息
      * chatGroup                群聊组
      * userList                 用户列表
+     * userPanelInfo            用户面板信息
      * systemConfig             系统设置配置项
      * userSettingFlag          用户设置窗口状态
      * systemSettingFlag        系统设置窗口状态
@@ -28,6 +31,7 @@ export default {
      * expressionFlag           表情输入窗口状态
      * secretPanel              私聊 / 群聊标志位
      * codeInputFlag            代码输入窗口状态
+     * userPanelFlag            用户面板窗口状态
      * 
      * @computed    - 计算属性
      * mask                     全局蒙版
@@ -43,6 +47,7 @@ export default {
      * sendMessage              发送消息
      * takeMessage              调取离线消息
      * logout                   注销
+     * getUserPanel             获取用户面板
      * chatPanelAdjust          调整聊天框位置
      * codeBlockAdjust          代码块格式化调整
      * imageAdjust              图片加载完成调整
@@ -52,7 +57,8 @@ export default {
         SystemSettingModule,
         PanelRoomNoticeModule,
         PanelRoomInfoModule,
-        PanelExpressionModule
+        PanelExpressionModule,
+        PanelUserInfoModule
     },
 	data() {
 		return {
@@ -79,6 +85,7 @@ export default {
                 userID: '',
                 avatar: ''
             },
+            userPanelInfo:  {},
             systemConfig: {
                 SOURCE_CODE: 'https://github.com/zyw5791557/EmliceChat',
                 WEB_SITE: 'https://www.emlice.top'
@@ -91,13 +98,15 @@ export default {
             expressionFlag: false,
             secretPanel: false,
             codeInputFlag: false,
+            userPanelFlag: false,
+            loading: true
 		}
     },
     watch: {
-        currentChatData (val) {
-            const last = val[val.length - 1];
-            this.userTip(last);
-        }
+        // currentChatData (val) {
+        //     const last = val[val.length - 1];
+        //     this.userTip(last);
+        // }
     },
     computed: {
         mask () {
@@ -107,7 +116,8 @@ export default {
                 this.roomNoticeFlag ||
                 this.roomInfoFlag ||
                 this.expressionFlag ||
-                this.codeInputFlag
+                this.codeInputFlag ||
+                this.userPanelFlag
             ) {
                 return true;
             }else {
@@ -126,9 +136,19 @@ export default {
             this.roomInfoFlag = false;
             this.expressionFlag = false;
             this.codeInputFlag = false;
+            this.userPanelFlag = false;
         },
         loadChatPanel (item) {
             if(item.userID === this.currentChatUserInfo.userID) return;
+            this.loading = true;
+            for(let i = 0; i < this.userList.length;i++) {
+                if(this.userList[i].name === item.name) {
+                    break;
+                }
+                if(this.userList[this.userList.length - 1].name !== item.name) {
+                    this.userList.push(item);
+                }
+            }
             this.takeMessage({
                 from: this.userInfo.name,
                 take: item.userID
@@ -142,18 +162,30 @@ export default {
             }else {
                 this.secretPanel = true;
             }
+            this.$nextTick(() => {
+                this.$refs.inputMsg.focus();
+            });
         },
         unfinished () {
             this.$notify.info({ title: '消息', message: '暂未开放' });
         },
         normalSmartProcess (param, type) { 
             var FTA = param.match(/^(https?|ftp|file):\/\//g);
-            var f = param.match(/.*(\.png|\.jpg|\.jpeg|\.gif)$/);
+            var f = param.match(/.*(\.png|\.jpg|\.jpeg)$/);
+            var gf = param.match(/.*(\.gif)$/);
             // 远程图片链接解析, 接口反防盗链
             if(FTA !== null && f !== null) {
                 return `
                     <div class="image">
                         <img data-original="/api/imgload?url=${param}" src="/api/imgload?url=${param}" onerror="this.src='/static/images/imgError.jpg'" style="max-height: 200px;">
+                    </div>
+                `;
+            }
+            // 单独玻璃 gif 图
+            if(FTA !== null && gf !== null) {
+                return `
+                    <div class="image">
+                        <img class="gif-image" data-original="/api/imgload?url=${param}" src="/api/imgload?url=${param}" onerror="this.src='/static/images/imgError.jpg'" style="max-height: 200px;">
                     </div>
                 `;
             }
@@ -239,6 +271,7 @@ export default {
             console.log('消息', msg);
             socket.emit('message', msg);
             this[clear] = '';
+            if(clear === 'code') this.codeInputFlag = false;
         },
         takeMessage (o) {
             socket.emit('take messages', o);
@@ -246,6 +279,14 @@ export default {
         logout () {
             localStorage.removeItem('UserInfo');
             this.$router.push({ name: 'Login' });
+        },
+        getUserPanel (name) {
+            if(name !== this.userInfo.name) {
+                this.userPanelFlag = true;
+                socket.emit('take userInfo', name);
+            }else {
+                return;
+            }
         },
         chatPanelAdjust () {
             if(!this.$refs.messageList) return;
@@ -263,17 +304,36 @@ export default {
              * 创建 imagesLoaded 实例
              * 确保 image 加载完毕改变聊天室 scrollTop
              */
+            if (!this.$refs.messageList) return;
             const imgLoad = imagesLoaded(this.$refs.messageList);
             // vanilla JS
             imgLoad.on('always',  instance => {
-                if (!this.$refs.messageList) return;
+                console.log('加载完成')
+                this.chatPanelAdjust();
+            });
+            /**@function    每个图片加载后触发窗口调整
+             * @augments
+             * instance     图像加载实例
+             * image        加载图像的 LoadingImage 实例
+             */
+            imgLoad.on( 'progress', ( instance, image ) => {
                 this.chatPanelAdjust();
             });
         },
         imagePreview () {
             // 图片放大
             if(this.$refs.preview) new Viewer(this.$refs.messageList, {
-                url: 'data-original'
+                url: 'data-original',
+                toolbar: 4,
+                // 过滤图片
+                filter(image) {
+                    if(
+                        image.classList.contains('avatar-image') || 
+                        image.classList.contains('expression-default-message') ||
+                        image.classList.contains('gif-image')
+                    ) return false;
+                    return true;
+                },
             });
         }
 	},
@@ -285,20 +345,34 @@ export default {
         // 接受历史记录
         socket.on('take messages',  data => {
             console.log('历史记录：', data);
+            this.loading = false;
             this.currentChatData = data;
-            this.userTip(data[0]);
+            if(data.length >= 1) this.userTip(data[data.length - 1]);
+            this.$nextTick(() => {
+                this.chatPanelAdjust();
+                this.codeBlockAdjust();
+                this.imageAdjust();
+                this.imagePreview();
+            });
         });
         // 接收 message
         socket.on('message', data => {
             console.log('消息',data);
             this.currentChatData = this.currentChatData.concat(data);
+            this.$nextTick(() => {
+                this.chatPanelAdjust();
+                this.codeBlockAdjust();
+                this.imageAdjust();
+                this.imagePreview();
+            });
+        });
+        // 接受用户名片
+        socket.on('take userInfo', res => {
+            console.log(res);
+            this.userPanelInfo = res;
         });
 	},
     updated() {
-        this.codeBlockAdjust();
-        this.chatPanelAdjust();
-        this.imageAdjust();
-        this.imagePreview();
         console.log('更新了')
     }
 }
@@ -349,7 +423,13 @@ export default {
                         </div>
                     </div>
                     <div v-if="chatPanelFlag" class="empty-chat-panel" chat-type="empty"></div>
-                    <div v-else class="chat-panel" chat-type="">
+                    <div v-else 
+                        v-loading="loading"
+                        element-loading-text="拼命加载中"
+                        element-loading-spinner="el-icon-loading"
+                        element-loading-background="rgba(0, 0, 0, 0.2)"
+                        class="chat-panel" 
+                        chat-type="">
                         <div class="chat-panel-header">
                             <div>
                                 <img class="avatar-image" :src="currentChatUserInfo.avatar" style="width: 40px; height: 40px; min-width: 40px; min-height: 40px;">
@@ -365,7 +445,7 @@ export default {
                         <div ref="messageList" class="message-list">
                             <div v-for="(item,index) in currentChatData" :key="index" class="message-list-item">
                                 <div :class="{ 'message-self': item.from === userInfo.name }" class="native-message">
-                                    <img class="avatar-image user-icon" :src="item.avatar" alt="" :data-username="item.from">
+                                    <img class="avatar-image user-icon" :src="item.avatar" :alt="item.avatar" @click="getUserPanel(item.from)" :data-username="item.from">
                                     <div>
                                         <div>
                                             <span class="message-username">{{ item.from }}</span>
@@ -373,7 +453,7 @@ export default {
                                         </div>
                                         <template>
                                             <div v-if="item.type === 'code'" ref="codeBlock" class="code"><pre><code>{{ item.message }}</code></pre></div>
-                                            <div v-else-if="(item.type === 'express') || (item.message.charAt(0) === '#')" class="text">
+                                            <div v-else-if="(item.type === 'expression') || (item.message.charAt(0) === '#')" class="text">
                                                 <div v-html="expressionProcess(item)"></div>
                                             </div>
                                             <div v-else-if="item.type === 'printscreen'" class="image" ref="preview">
@@ -400,7 +480,7 @@ export default {
                             <input type="file" class="image-input" accept="image/png,image/jpeg,image/gif">
                         </div>
                         <div class="input-box">
-                            <input v-model="message" @keyup.enter="sendMessage(message,'normal','message')" type="text" placeholder="输入消息" maxlength="1024">
+                            <input ref="inputMsg" v-model="message" @keyup.enter="sendMessage(message,'normal','message')" type="text" placeholder="输入消息" maxlength="1024">
                         </div>
                         <template v-if="!secretPanel">
                             <transition name="silde-rightIn">
@@ -426,9 +506,9 @@ export default {
                                     <button @click="codeInputFlag = false" class="cancelCode">取消</button></div>
                             </div>
                         </transition>
-                        <div class="user-info" style="opacity: 0; transform: scale(0); display: none;">
-                            
-                        </div>
+                        <transition name="scale">
+                            <panel-user-info-module v-show="userPanelFlag" :data="userPanelInfo" @chat="loadChatPanel" @close="userPanelFlag = false"></panel-user-info-module>
+                        </transition>
                     </div>
                 </div>
                 <transition name="scale">
