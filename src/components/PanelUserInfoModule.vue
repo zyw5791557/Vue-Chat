@@ -1,5 +1,6 @@
 <script>
 export default {
+    name: 'PanelUserInfoModule',
     props: {
         data: {
             type: Object,
@@ -15,11 +16,6 @@ export default {
         },
         placeFilter (val) {
             return val === '' ? '火星' : val;
-        }
-    },
-    data () {
-        return {
-            
         }
     },
     computed: {

@@ -1,5 +1,6 @@
 <script>
 import Date from '@/common/js/util.js';
+import SocketClient from '@/socket-client';
 import UserSettingModule from '@/components/UserSettingModule';
 import SystemSettingModule from '@/components/SystemSettingModule';
 import PanelRoomNoticeModule from '@/components/PanelRoomNoticeModule';
@@ -17,6 +18,7 @@ export default {
      * 
      * @data        - 状态
      * userInfo                 用户信息
+     * myPanel                  我的面板信息
      * duration                 注册时长
      * currentChatData          当前聊天窗口的消息
      * chatGroup                群聊组
@@ -65,6 +67,7 @@ export default {
             message: '',
             code: '',
             userInfo: JSON.parse(localStorage.getItem('UserInfo')),
+            myPanel: {},
             duration: ~~localStorage.getItem('Duration'),
             currentChatData: [],
             chatGroup: ['all'],
@@ -137,6 +140,10 @@ export default {
             this.expressionFlag = false;
             this.codeInputFlag = false;
             this.userPanelFlag = false;
+        },
+        getMyPanel () {
+            this.userSettingFlag = true;
+            socket.emit('take userInfo', this.userInfo.name);
         },
         loadChatPanel (item) {
             if(item.userID === this.currentChatUserInfo.userID) return;
@@ -338,39 +345,7 @@ export default {
         }
 	},
 	mounted() {
-        // 音乐初始化
-        playmusic('.description','432778620');
-        // 用户加入
-        socket.emit('user join', this.userInfo.name);
-        // 接受历史记录
-        socket.on('take messages',  data => {
-            console.log('历史记录：', data);
-            this.loading = false;
-            this.currentChatData = data;
-            if(data.length >= 1) this.userTip(data[data.length - 1]);
-            this.$nextTick(() => {
-                this.chatPanelAdjust();
-                this.codeBlockAdjust();
-                this.imageAdjust();
-                this.imagePreview();
-            });
-        });
-        // 接收 message
-        socket.on('message', data => {
-            console.log('消息',data);
-            this.currentChatData = this.currentChatData.concat(data);
-            this.$nextTick(() => {
-                this.chatPanelAdjust();
-                this.codeBlockAdjust();
-                this.imageAdjust();
-                this.imagePreview();
-            });
-        });
-        // 接受用户名片
-        socket.on('take userInfo', res => {
-            console.log(res);
-            this.userPanelInfo = res;
-        });
+        new SocketClient(this);
 	},
     updated() {
         console.log('更新了')
@@ -403,7 +378,7 @@ export default {
                     </div>
                     <div class="user-panel">
                         <div class="online" title="在线"></div>
-                        <div :style="`background-image: url(${userInfo.avatar})`" @click="userSettingFlag = true" class="avatar-text" title="查看个人信息"></div>
+                        <div :style="`background-image: url(${userInfo.avatar})`" @click="getMyPanel" class="avatar-text" title="查看个人信息"></div>
                     </div>
                 </header>
                 <div class="body">
@@ -423,13 +398,7 @@ export default {
                         </div>
                     </div>
                     <div v-if="chatPanelFlag" class="empty-chat-panel" chat-type="empty"></div>
-                    <div v-else 
-                        v-loading="loading"
-                        element-loading-text="拼命加载中"
-                        element-loading-spinner="el-icon-loading"
-                        element-loading-background="rgba(0, 0, 0, 0.2)"
-                        class="chat-panel" 
-                        chat-type="">
+                    <div v-else class="chat-panel" chat-type="">
                         <div class="chat-panel-header">
                             <div>
                                 <img class="avatar-image" :src="currentChatUserInfo.avatar" style="width: 40px; height: 40px; min-width: 40px; min-height: 40px;">
@@ -442,7 +411,13 @@ export default {
                                     <i class="icon" title="关于"></i></div>
                             </div>
                         </div>
-                        <div ref="messageList" class="message-list">
+                        <div 
+                            ref="messageList" 
+                            v-loading="loading"
+                            element-loading-text="拼命加载中"
+                            element-loading-spinner="el-icon-loading"
+                            element-loading-background="rgba(0, 0, 0, 0.2)"
+                            class="message-list">
                             <div v-for="(item,index) in currentChatData" :key="index" class="message-list-item">
                                 <div :class="{ 'message-self': item.from === userInfo.name }" class="native-message">
                                     <img class="avatar-image user-icon" :src="item.avatar" :alt="item.avatar" @click="getUserPanel(item.from)" :data-username="item.from">
@@ -507,14 +482,20 @@ export default {
                             </div>
                         </transition>
                         <transition name="scale">
-                            <panel-user-info-module v-show="userPanelFlag" :data="userPanelInfo" @chat="loadChatPanel" @close="userPanelFlag = false"></panel-user-info-module>
+                            <panel-user-info-module 
+                                v-show="userPanelFlag" 
+                                :data="userPanelInfo" 
+                                @chat="loadChatPanel" 
+                                @close="userPanelFlag = false">
+                            </panel-user-info-module>
                         </transition>
                     </div>
                 </div>
                 <transition name="scale">
                     <user-setting-module 
                         v-show="userSettingFlag" 
-                        data="" @close="userSettingFlag = false"
+                        :data="myPanel" 
+                        @close="userSettingFlag = false"
                     ></user-setting-module>
                 </transition>
                 <transition name="scale">
