@@ -9,7 +9,9 @@ export default{
 				// 注册
 				register: '/api/register',
 				// 修改用户信息
-				userInfoEdit: '/api/userEdit'
+				userInfoEdit: '/api/userEdit',
+				// 修改用户头像
+				userAvatarUpdate: '/upload/avatar_upload',
 			}
 			let params = {};
 			params.url = api_port[api];

@@ -20,6 +20,7 @@ export default {
      * userInfo                 用户信息
      * myPanel                  我的面板信息
      * duration                 注册时长
+     * onlineUsers              所用在线用户面板
      * currentChatData          当前聊天窗口的消息
      * chatGroup                群聊组
      * userList                 用户列表
@@ -41,6 +42,7 @@ export default {
      * @methods     - 方法
      * loadChatData             加载离线消息
      * clearPanel               清除所有面板状态
+     * userInfoUpdate           更新用户信息
      * loadChatPanel            加载聊天面板
      * unfinished               未完成提示
      * normalSmartProcess       消息智能处理
@@ -69,6 +71,7 @@ export default {
             userInfo: JSON.parse(localStorage.getItem('UserInfo')),
             myPanel: {},
             duration: ~~localStorage.getItem('Duration'),
+            onlineUsers: '',
             currentChatData: [],
             chatGroup: ['all'],
             userList: [
@@ -141,11 +144,16 @@ export default {
             this.codeInputFlag = false;
             this.userPanelFlag = false;
         },
+        userInfoUpdate () {
+            this.userInfo = JSON.parse(localStorage.getItem('UserInfo'));
+        },
         getMyPanel () {
             this.userSettingFlag = true;
             socket.emit('take userInfo', this.userInfo.name);
         },
         loadChatPanel (item) {
+            console.log('加载聊天面板', item)
+            console.log(this.chatGroup.indexOf(item.userID))
             if(item.userID === this.currentChatUserInfo.userID) return;
             this.loading = true;
             for(let i = 0; i < this.userList.length;i++) {
@@ -166,6 +174,7 @@ export default {
             this.currentChatUserInfo.avatar = avatar;
             if(this.chatGroup.indexOf(item.userID) !== -1) {
                this.chatPanelFlag = false; 
+                this.secretPanel = false;
             }else {
                 this.secretPanel = true;
             }
@@ -462,7 +471,12 @@ export default {
                                 <panel-room-notice-module v-show="roomNoticeFlag" @close="roomNoticeFlag = false"></panel-room-notice-module>
                             </transition>
                             <transition name="silde-rightIn">
-                                <panel-room-info-module v-show="roomInfoFlag" @close="roomInfoFlag = false"></panel-room-info-module>
+                                <panel-room-info-module 
+                                    v-show="roomInfoFlag"
+                                    :data="onlineUsers"
+                                    @startChat="getUserPanel"
+                                    @close="roomInfoFlag = false">
+                                </panel-room-info-module>
                             </transition>
                         </template>
                         <transition name="scale">
@@ -496,6 +510,7 @@ export default {
                         v-show="userSettingFlag" 
                         :data="myPanel" 
                         @close="userSettingFlag = false"
+                        @updateAvtar="userInfoUpdate"
                     ></user-setting-module>
                 </transition>
                 <transition name="scale">

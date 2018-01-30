@@ -11,7 +11,7 @@ module.exports = {
 	        target: 'http://static.emlice.top',
 	        changeOrigin:true,
 	        pathRewrite: {
-	        	'^/upload': '/'
+	        	'^/upload': '/api'
 	        }
 	    },
 	}

@@ -1,4 +1,16 @@
 <script>
+/**
+ * @data
+ * loadData             接受用户信息数据
+ * editFlag             编辑状态
+ * selectSex            选择性别
+ * 
+ * @methods
+ * edit                 编辑状态改变
+ * postEdit             更新用户信息
+ * avatarSetting        触发头像上传事件
+ * avatarSettingExec    头像更新执行器
+ */
 export default {
     name: 'UserSettingModule',
     props: {
@@ -88,6 +100,42 @@ export default {
                     this.editFlag = true;
                 }
             });
+        },
+        avatarSetting () {
+            this.$refs.avatarUpload.click();
+        },
+        avatarSettingExec ($event) {
+            var t = $event.target.files[0];
+            if (t && t.size > 1.5 * 1024 * 1024) {
+                this.$notify.error({
+                    title: '错误',
+                    message: '图片太大, 请压缩后重新上传~'
+                });
+                return;
+            }
+            var param = new FormData();
+            param.append("avatar", t);
+            param.append("avatarName", this.loadData.Data.name);
+            this.getApi('userAvatarUpdate', {
+                method: 'POST',
+                data: param,
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            }).then(res => {
+                var c = res.data.Code;
+                var s = res.data.Str;
+                var a = res.data.Avatar;
+                var ConnectUserInfo = JSON.parse(localStorage.getItem('UserInfo'));
+                ConnectUserInfo.avatar = a;
+                localStorage.setItem('UserInfo', JSON.stringify(ConnectUserInfo));
+                this.$notify.success({
+                    title: '成功',
+                    message: '头像更新成功~'
+                });
+                this.$emit('updateAvtar');
+                this.$emit('close');
+            });
         }
     }
 }
@@ -101,15 +149,21 @@ export default {
             <div class="background-image" :style="`background-image: url(${loadData.Data.avatar});`"></div>
             <div class="background-mask"></div>
             <div class="content">
-                <img class="avatar-image" :src="loadData.Data.avatar"
+                <img :src="loadData.Data.avatar"
+                    @click="avatarSetting"
+                    class="avatar-image"
                     style="width: 80px; height: 80px; min-width: 80px; min-height: 80px;">
-                <span>Emlice</span>
+                <span>{{ loadData.Data.name }}</span>
                 <div class="icon-list">
                     <a class="icon" title="github" v-if="loadData.Data.github" :href="`//${loadData.Data.github}`" rel="noopener noreferrer" target="_blank"></a>
                     <a class="icon" title="website" v-if="loadData.Data.website" :href="`//${loadData.Data.website}`" rel="noopener noreferrer" target="_blank" style="position: relative; top: 3px;"></a>
                     <a class="icon" title="qq" v-if="loadData.Data.qq" :href="`tencent://message/?uin=${loadData.Data.qq}`" rel="noopener noreferrer" target="_blank"></a>
                 </div>
-                <input type="file" accept="image/jpg,image/jpeg,image/png,image/gif">
+                <input 
+                    ref="avatarUpload" 
+                    @change="avatarSettingExec" 
+                    type="file" 
+                    accept="image/jpg,image/jpeg,image/png,image/gif">
             </div>
         </div>
         <div v-if="editFlag" class="normal-status">

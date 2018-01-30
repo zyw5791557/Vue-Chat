@@ -3,6 +3,11 @@ function SocketClient($this) {
     playmusic('.description','432778620');
     // 用户加入
     socket.emit('user join', $this.userInfo.name);
+    // 接受用户数
+    socket.on('user join', data => {
+        console.log(data)
+        $this.onlineUsers = data;
+    });
     // 接受历史记录
     socket.on('take messages',  data => {
         console.log('历史记录：', data);
