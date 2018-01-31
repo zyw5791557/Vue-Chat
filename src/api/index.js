@@ -12,6 +12,10 @@ export default{
 				userInfoEdit: '/api/userEdit',
 				// 修改用户头像
 				userAvatarUpdate: '/upload/avatar_upload',
+				// 删除聊天数据
+				deleteChatData: '/upload/clearData',
+				// 截图上传
+				'printscreen': '/upload/ps_upload'
 			}
 			let params = {};
 			params.url = api_port[api];

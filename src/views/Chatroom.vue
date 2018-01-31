@@ -21,6 +21,7 @@ export default {
      * myPanel                  我的面板信息
      * duration                 注册时长
      * onlineUsers              所用在线用户面板
+     * myUserListArr            我的临时会话集合
      * currentChatData          当前聊天窗口的消息
      * chatGroup                群聊组
      * userList                 用户列表
@@ -55,6 +56,8 @@ export default {
      * chatPanelAdjust          调整聊天框位置
      * codeBlockAdjust          代码块格式化调整
      * imageAdjust              图片加载完成调整
+     * imgReader                截图上传
+     * pasteMsg                 剪贴板消息
      */
     components: {
         UserSettingModule,
@@ -68,10 +71,14 @@ export default {
 		return {
             message: '',
             code: '',
-            userInfo: JSON.parse(localStorage.getItem('UserInfo')),
             myPanel: {},
             duration: ~~localStorage.getItem('Duration'),
             onlineUsers: '',
+            myUserListArr: {
+                all: {
+                    noRead: 0
+                },
+            },
             currentChatData: [],
             chatGroup: ['all'],
             userList: [
@@ -94,7 +101,8 @@ export default {
             userPanelInfo:  {},
             systemConfig: {
                 SOURCE_CODE: 'https://github.com/zyw5791557/EmliceChat',
-                WEB_SITE: 'https://www.emlice.top'
+                WEB_SITE: 'https://www.emlice.top',
+                clearDataLock: true
             },
             userSettingFlag: false,
             systemSettingFlag: false,
@@ -115,6 +123,9 @@ export default {
         // }
     },
     computed: {
+        userInfo () {
+            return this.$store.state.userInfo;
+        },
         mask () {
             if(
                 this.userSettingFlag || 
@@ -145,7 +156,7 @@ export default {
             this.userPanelFlag = false;
         },
         userInfoUpdate () {
-            this.userInfo = JSON.parse(localStorage.getItem('UserInfo'));
+            this.$store.commit('UPDATE_USERINFO', JSON.parse(localStorage.getItem('UserInfo')));
         },
         getMyPanel () {
             this.userSettingFlag = true;
@@ -267,6 +278,7 @@ export default {
             }
         },
         userTip (last) {
+            console.log('小提示',last)
             this.userList.some(item => {
                 if(item.userID === last.to) {
                     item.messageInfo.message = last.from + '： ' + this.noticeProcess(last.message,last.type);
@@ -338,21 +350,89 @@ export default {
         },
         imagePreview () {
             // 图片放大
-            if(this.$refs.preview) new Viewer(this.$refs.messageList, {
-                url: 'data-original',
-                toolbar: 4,
-                // 过滤图片
-                filter(image) {
-                    if(
-                        image.classList.contains('avatar-image') || 
-                        image.classList.contains('expression-default-message') ||
-                        image.classList.contains('gif-image')
-                    ) return false;
-                    return true;
-                },
+            if(this.$refs.preview) {
+                new Viewer(this.$refs.messageList, {
+                    url: 'data-original',
+                    toolbar: 4,
+                    // 过滤图片
+                    filter(image) {
+                        if(
+                            image.classList.contains('avatar-image') || 
+                            image.classList.contains('expression-default-message') ||
+                            image.classList.contains('gif-image')
+                        ) return false;
+                        return true;
+                    },
+                });
+            }
+        },
+        imgReader (item) {
+            var blob = item.getAsFile();
+            if (blob !== null && blob.size > 1.5 * 1024 * 1024) {
+                this.$notify.error({
+                    title: '错误',
+                    message: '图片太大, 请压缩后重新上传~'
+                });
+                return;
+            } else if (blob === null) {
+                this.$notify.error({
+                    title: '错误',
+                    message: '请截图重新上传~'
+                });
+                return;
+            }
+            var param = new FormData();
+            param.append("ps", blob);
+            this.getApi('printscreen',{
+                method: 'POST',
+                data: param,
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            }).then(res => {
+                var Code = res.data.Code;
+                var Str = res.data.Str;
+                if (Code === 0) {
+                    var d = res.data.ps;
+                    var to = this.currentChatUserInfo.userID;
+                    var msg = {
+                        from: this.userInfo.name,
+                        avatar: this.userInfo.avatar,
+                        to: to,
+                        message: `${d}`,
+                        type: 'printscreen',
+                        date: new Date().getTime(),
+                        read: false,
+                    }
+                    socket.emit('message', msg);
+                } else if (Code === -1) {
+                    this.$notify.error({
+                        title: '错误',
+                        message: Str
+                    });
+                    return;
+                }
             });
+        },
+        pasteMsg ($event) {
+            const items = ($event.clipboardData || $event.originalEvent.clipboardData).items;
+            const types = ($event.clipboardData || $event.originalEvent.clipboardData).types;
+            // 如果包含文件内容
+            if (types.indexOf('Files') > -1) {
+                for (let index = 0; index < items.length; index++) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.match(/^image/)) {
+                        this.imgReader(item);
+                    }
+                }
+                $event.preventDefault();
+            }
         }
-	},
+    },
+    created () {
+        // 用户权限检查
+        socket.emit('check permission', this.userInfo.name);
+    },
 	mounted() {
         new SocketClient(this);
 	},
@@ -464,7 +544,14 @@ export default {
                             <input type="file" class="image-input" accept="image/png,image/jpeg,image/gif">
                         </div>
                         <div class="input-box">
-                            <input ref="inputMsg" v-model="message" @keyup.enter="sendMessage(message,'normal','message')" type="text" placeholder="输入消息" maxlength="1024">
+                            <input 
+                                ref="inputMsg" 
+                                v-model="message" 
+                                @keyup.enter="sendMessage(message,'normal','message')" 
+                                @paste="pasteMsg"
+                                type="text" 
+                                placeholder="输入消息" 
+                                maxlength="1024">
                         </div>
                         <template v-if="!secretPanel">
                             <transition name="silde-rightIn">
