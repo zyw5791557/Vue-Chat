@@ -40,7 +40,7 @@ export default {
                 if (c === 0) {
                     // 注册成功
                     var userData = {
-                    	name: name,
+                    	name: this.form.username,
                     	avatar: "http://static.emlice.top/images/users/default.png",
                     	sex: 'male',
                     	birthday: '2017-12-25',
@@ -56,6 +56,7 @@ export default {
                     setTimeout(() => {
                         localStorage.setItem('UserInfo', JSON.stringify(userData));
                         localStorage.setItem('Duration', 1);
+                        this.$store.commit('UPDATE_USERINFO', JSON.parse(localStorage.getItem('UserInfo')));
                         this.$router.push({ name: 'Chatroom' });
                     }, 1000);
                 } else if (c === 1) {
@@ -90,7 +91,7 @@ export default {
                         <div>
                             <i class="icon"> </i>
                         </div>
-                        <input v-model="form.password" id="pwd" type="password" placeholder="密码">
+                        <input v-model="form.password" @keydown.enter="register" id="pwd" type="password" placeholder="密码">
                     </div>
                     <div>
                         <span @click="login">登录</span>

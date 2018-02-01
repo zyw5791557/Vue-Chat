@@ -37,6 +37,36 @@ function desktopRemind (res, $this) {
     }
 }
 
+function noReadMsgRender (res, $this) {
+    /**
+     *  from 来自谁的消息
+     */
+    
+    var currentUser = $this.currentChatUserInfo.userID;
+
+    // 判断当前窗口是否为聊天渲染窗口, 若是调用渲染函数, 若不是, 直接跳走并 未读消息计数 ++ 
+    if (currentUser !== '') {           // 如果当前频道不为空频道
+        // 当前为私聊频道或群聊频道
+        if (res[0].to == 'all' && currentUser !== 'all') {    // 如果是发送去群聊频道切当前不在群聊频道
+            $this.myUserListArr.all.noRead++;
+        } else {                     // 私聊频道
+            if (res[0].to !== 'all' && res[0].from !== $this.userInfo.name && currentUser !== res[0].from) {
+                $this.myUserListArr[res[0].from] === undefined ? $this.$set($this.myUserListArr, res[0].from, { noRead: 1 }) : $this.myUserListArr[res[0].from].noRead++;
+            }
+        }
+    } else {
+        // 当前为空频道。
+        if (res[0].to == 'all' && currentUser !== 'all') {    // 如果是发送去群聊频道切当前不在群聊频道
+            $this.myUserListArr.all.noRead++;
+        } else {                     // 私聊频道
+            if (res[0].to !== 'all' && res[0].from !== $this.userInfo.name && currentUser !== res[0].from) {
+                $this.myUserListArr[res[0].from] === undefined ? $this.$set($this.myUserListArr, res[0].from, { noRead: 1 }) : $this.myUserListArr[res[0].from].noRead++;
+            }
+        }
+    }
+
+}
+
 
 function SocketClient($this) {
     // 音乐初始化
@@ -64,10 +94,18 @@ function SocketClient($this) {
     // 接收 message
     socket.on('message', data => {
         console.log('消息',data);
+        // 渲染未读消息
+        noReadMsgRender(data, $this);
         const f = data[0].to === $this.currentChatUserInfo.userID;
         if(f) {
             $this.currentChatData = $this.currentChatData.concat(data);
         } else {
+            let existFlag = false;
+            $this.userList.map(item => {
+                if(item.userID === data[0].from) {
+                    existFlag = true;
+                }
+            });
             const o = {
                 name: data[0].from,
                 userID: data[0].from,
@@ -75,9 +113,10 @@ function SocketClient($this) {
                 unread: 0,
                 messageInfo: {}
             }
-            $this.userList.push(o);
+            if(!existFlag && data[0].to !== 'all') $this.userList.push(o);
         }
         $this.$nextTick(() => {
+            $this.userTip(data[0]);
             $this.chatPanelAdjust();
             $this.codeBlockAdjust();
             $this.imageAdjust();
@@ -99,6 +138,45 @@ function SocketClient($this) {
     socket.on('check permission', f => {
         if(f) {
             $this.systemConfig.clearDataLock = false;
+        }
+    });
+    // 接受离线消息未读条数
+    socket.on('Offline noRead messages',  res => {
+        console.log('渲染离线消息',res);
+        var currentUser = $this.currentChatUserInfo.userID;
+        var fromArr = {};
+        var fromList = {};
+        if (res.length !== 0) {
+            for (let i = 0; i < res.length; i++) {
+                if (fromList[res[i].from] === undefined) {
+                    fromList[res[i].from] = [res[i]];
+                } else {
+                    fromList[res[i].from].push(res[i])
+                }
+            }
+            for(var j in fromList) {
+                fromArr[j] = {
+                    noRead: fromList[j].length,
+                    lastMsg: fromList[j][fromList[j].length-1],
+                };
+            }
+            console.log(fromArr)
+            for (var k in fromArr) {
+                if (currentUser !== k && k !== $this.userInfo.name && k !== 'all') {
+                    const o = {
+                        name: fromArr[k].lastMsg.from,
+                        userID: fromArr[k].lastMsg.from,
+                        avatar: fromArr[k].lastMsg.avatar,
+                        unread: 0,
+                        messageInfo: {}
+                    }
+                    $this.userList.push(o);
+                    // 添加临时会话成员
+                    $this.$set($this.myUserListArr, k, { noRead: fromArr[k].noRead });
+                    // 渲染最后一条消息
+                    $this.userTip(fromArr[k].lastMsg)
+                }
+            }
         }
     });
 }

@@ -7,6 +7,7 @@ import PanelRoomNoticeModule from '@/components/PanelRoomNoticeModule';
 import PanelRoomInfoModule from '@/components/PanelRoomInfoModule';
 import PanelExpressionModule from '@/components/PanelExpressionModule';
 import PanelUserInfoModule from '@/components/PanelUserInfoModule';
+import ContactsModule from '@/components/ContactsModule';
 export default {
     /**@components  - 组件注册
      * UserSettingModule        用户设置
@@ -15,6 +16,7 @@ export default {
      * PanelRoomInfoModule      群聊信息面板
      * PanelExpressionModule    表情模块
      * PanelUserInfoModule      用户信息面板
+     * ContactsModule           联系人模块
      * 
      * @data        - 状态
      * userInfo                 用户信息
@@ -36,6 +38,8 @@ export default {
      * secretPanel              私聊 / 群聊标志位
      * codeInputFlag            代码输入窗口状态
      * userPanelFlag            用户面板窗口状态
+     * loading                  loading
+     * contactsPanelLock        联系人面板锁
      * 
      * @computed    - 计算属性
      * mask                     全局蒙版
@@ -65,7 +69,8 @@ export default {
         PanelRoomNoticeModule,
         PanelRoomInfoModule,
         PanelExpressionModule,
-        PanelUserInfoModule
+        PanelUserInfoModule,
+        ContactsModule
     },
 	data() {
 		return {
@@ -113,14 +118,15 @@ export default {
             secretPanel: false,
             codeInputFlag: false,
             userPanelFlag: false,
-            loading: true
+            loading: true,
+            contactsPanelLock: false
 		}
     },
     watch: {
-        // currentChatData (val) {
-        //     const last = val[val.length - 1];
-        //     this.userTip(last);
-        // }
+        currentChatData (res) {
+            // 朕已阅
+            socket.emit('message read', { readUser: this.userInfo.name, msgs: res });
+        }
     },
     computed: {
         userInfo () {
@@ -166,15 +172,15 @@ export default {
             console.log('加载聊天面板', item)
             console.log(this.chatGroup.indexOf(item.userID))
             if(item.userID === this.currentChatUserInfo.userID) return;
+            if(this.myUserListArr[item.userID])this.myUserListArr[item.userID].noRead = 0;
             this.loading = true;
-            for(let i = 0; i < this.userList.length;i++) {
-                if(this.userList[i].name === item.name) {
-                    break;
+            let existFlag = false;
+            this.userList.map(item => {
+                if(item.userID === item.userID) {
+                    existFlag = true;
                 }
-                if(this.userList[this.userList.length - 1].name !== item.name) {
-                    this.userList.push(item);
-                }
-            }
+            });
+            if(!existFlag) this.userList.push(item);
             this.takeMessage({
                 from: this.userInfo.name,
                 take: item.userID
@@ -187,6 +193,7 @@ export default {
                this.chatPanelFlag = false; 
                 this.secretPanel = false;
             }else {
+               this.chatPanelFlag = false; 
                 this.secretPanel = true;
             }
             this.$nextTick(() => {
@@ -279,12 +286,24 @@ export default {
         },
         userTip (last) {
             console.log('小提示',last)
-            this.userList.some(item => {
-                if(item.userID === last.to) {
-                    item.messageInfo.message = last.from + '： ' + this.noticeProcess(last.message,last.type);
-                    item.messageInfo.date = new Date(last.date).format('hh:mm');
-                }
-            });
+            if(last.to === 'all') {
+                this.userList.find(item => {
+                    if(item.userID === last.to) {
+                        this.$set(item.messageInfo, 'message', last.from + '： ' + this.noticeProcess(last.message,last.type));
+                        this.$set(item.messageInfo, 'date', new Date(last.date).format('hh:mm'));
+                        return;
+                    }
+                });
+            } else {
+                this.userList.find(item => {
+                    if(item.userID === last.from || item.userID === last.to) {
+                        this.$set(item.messageInfo, 'message', last.from + '： ' + this.noticeProcess(last.message,last.type));
+                        this.$set(item.messageInfo, 'date', new Date(last.date).format('hh:mm'));
+                        return;
+                    }
+                });
+            }
+            
         },
         sendMessage (message,type,clear) {
             var msg = {
@@ -432,6 +451,8 @@ export default {
     created () {
         // 用户权限检查
         socket.emit('check permission', this.userInfo.name);
+        // 检查离线状态下的未读消息, 初始化
+        socket.emit('Offline noRead messages', this.userInfo.name);
     },
 	mounted() {
         new SocketClient(this);
@@ -472,9 +493,10 @@ export default {
                 </header>
                 <div class="body">
                     <div class="user-list">
+                        <mu-list-item @click="contactsPanelLock = !contactsPanelLock" title="联系人"></mu-list-item>
                         <div v-for="(item,index) in userList" :key="index" @click="loadChatPanel(item)" class="user-list-item" :data-user="item.userID">
                             <img class="avatar-image" :src="item.avatar" alt="">
-                            <div class="unread">{{ item.unread }}</div>
+                            <div class="unread">{{ myUserListArr[item.userID].noRead }}</div>
                             <div class="content">
                                 <div>
                                     <p>{{ item.name }}</p>
@@ -613,6 +635,9 @@ export default {
 		<div v-show="!chatPanelFlag" class="lyric_content">
             <div class="description"></div>
         </div>
+
+        <contacts-module :lock="contactsPanelLock"></contacts-module>
+
 	</div>
 </template>
 

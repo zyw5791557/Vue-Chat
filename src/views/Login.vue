@@ -25,6 +25,7 @@ export default {
                     // 登录成功
                     localStorage.setItem('UserInfo', JSON.stringify(res.data.Data));
                     localStorage.setItem('Duration', h);
+                    this.$store.commit('UPDATE_USERINFO', JSON.parse(localStorage.getItem('UserInfo')));
                     this.$router.push({ name: 'Chatroom' });
                 } else if (c === -1) {
                     // 账号或密码错误!
@@ -47,7 +48,7 @@ export default {
         <div class="login">
             <div>
                 <div>
-                    <img class="avatar-image" src="/static/images/user.jpg" style="width: 100px; height: 100px; min-width: 100px; min-height: 100px;">
+                    <img class="avatar-image" src="/static/images/sleep.gif" style="width: 100px; height: 100px; min-width: 100px; min-height: 100px;">
                 </div>
                 <div>
                     <span style="position: relative; top: -4px;">{{ tip }}</span>
@@ -61,7 +62,7 @@ export default {
                         <div>
                             <i class="icon"> </i>
                         </div>
-                        <input v-model="form.password" id="pwd" type="password" placeholder="密码">
+                        <input v-model="form.password" @keydown.enter="login" id="pwd" type="password" placeholder="密码">
                     </div>
                     <div>
                         <span @click="register">注册</span>
