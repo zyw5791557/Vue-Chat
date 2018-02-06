@@ -23,6 +23,7 @@ export default {
 <style lang="scss">
 @import url('./assets/style/common/style.css');
 @import url('./assets/style/common/solarized-light.css');
+@import './assets/style/ui-modification.scss';
 .fade-enter-active,
 .fade-leave-active {
 	transition: all .3s ease;
