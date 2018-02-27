@@ -10,6 +10,7 @@ Vue.use(ElementUI);
 // 引入 Muse UI 
 import MuseUI from 'muse-ui';
 import 'muse-ui/dist/muse-ui.css';
+import 'muse-ui/dist/theme-carbon.css' // 使用 carbon 主题
 Vue.use(MuseUI);
 
 // 引入已配置的 Vuex 仓库
@@ -24,22 +25,38 @@ Vue.prototype.$NProgress = NProgress;
 // 引入路由配置
 import router from './router';
 
-// 引入重封装的 LocalStorage
-// import { setLocalStorage, getLocalStorage } from './common/js/util.js';
-
 // 引入自定义插件 - API 接口
 import api from './api';
 Vue.use(api);
 
-// 线上资源服务器地址
-Vue.prototype.$STATIC_URL = 'http://static.emlice.top';
+// 配置文件
+import config from './config';
+
+
+// 连接到远程socket地址。
+import io from 'socket.io-client';
+import SocketClient from './socket-client';
+const SOCKET_URL = config.$SOCKET_URL;
+const socket = io.connect(SOCKET_URL, {
+	reconnection : true
+});
+
+Vue.prototype.$socket = socket;
+
+Vue.prototype.$SocketClient = SocketClient;
+
+
+// 资源服务器地址
+Vue.prototype.$STATIC_URL = config.$STATIC_URL;
 
 // 全局 axiosBaseURL
 Vue.prototype.$BASE_URL = process.env.API_ROOT;
-
-new Vue({
+export default new Vue({
 	router,
 	store,
+	created () {
+        // Socket-Client
+        SocketClient.initChat(this);
+	},
 	render: h => h(App)
 }).$mount('#app');
-
