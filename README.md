@@ -1,4 +1,4 @@
-# **Vue-Chat**
+# **Vue-Chat-Business**
 
 [![Build Status](https://travis-ci.org/yinxin630/fiora.svg?branch=master)](https://travis-ci.org/yinxin630/fiora)
 [![author](https://img.shields.io/badge/author-Emlice-blue.svg)](http://suisuijiang.com)
@@ -6,19 +6,47 @@
 
 语言: [简体中文](REMEAD.md)
 
+> 该版本可能商用, 推荐使用[Vue-Chat](https://github.com/zyw5791557/Vue-Chat)  
+> [Vue-Chat](https://github.com/zyw5791557/Vue-Chat)为个人项目, 将会不定期抽空维护和ADD IDEA。  
+> 功能基本一致, 个别功能会做增删。  
+
 该项目是[EmliceChat](https://github.com/zyw5791557/EmliceChat)的重构项目。不再使用 jquery,采用效果更好的Vue全家桶编写，同时也方便后期维护和新IDEA的添加。
 
 
 ## 重要更新
-### v1.0.0 | 2018-02-27
-1.单页面版本聊天室上线  
-2.版本发布  
-3.优化  
+### v1.0.0 | 2018-02-07
+1.新增游客登录模块  
+2.优化模板  
+3.测试，修改常见BUG  
 
-### v2.0.0 | 2018-02-27
-1.逻辑代码重构 | 模板重构  
-2.版本发布  
-3.优化  
+### v1.0.1 | 2018-02-08
+1.尝试重构模板  
+2.解决重构模板产生的蒙版紊乱问题  
+3.优化整体逻辑布局
+
+### v1.0.2 | 2018-02-11
+1.重构模板基本调试完成  
+2.优化性能  
+3.优化前后端逻辑代码
+
+### v2.0.0 | 2018-02-22
+1.重构模板， socket-client 逻辑代码。  
+2.现有功能重新对接。  
+3.初步测试无BUG。  
+4.开始逐步加入联系人等新功能。
+
+### v2.0.1 | 2018-02-22
+1.新增简易的私聊 typing 状态  
+2.待测试
+
+### v2.1.0 | 2018-02-24
+1.联系人功能上线  
+2.优化  
+
+### v2.1.1 | 2018-02-24
+1.天气功能上线  
+2.优化  
+3.离线消息bug修复  
 
 ## 功能
 
