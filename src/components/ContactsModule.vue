@@ -28,7 +28,10 @@ export default {
         },
         searchUserRes () {
             return this.$store.state.searchUserRes;
-        }
+        },
+        userInfo () {
+            return this.$store.state.userInfo || this.$store.state.touristInfo;
+        },
     },
     methods: {
         toggle () {
@@ -41,6 +44,11 @@ export default {
             this.$store.commit('SOCKET_SEARCH_USER_EMIT', this.searchVal);
         },
         addContacts (item) {
+            const flag = item.name === this.userInfo.name;
+            if(flag) {
+                this.$message.error('不能添加自己哦~');
+                return;
+            }
             this.$store.commit('SOCKET_ADD_CONTACTS_EMIT', item);
         },
         loadChat (item) {
